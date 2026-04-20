@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
- 
+
 const INITIAL_CARDS = [
   { id: "reserve", name: "Amex Delta Reserve", balance: 7125.30, originalBalance: 7125.30, apr: 28.49, color: "#FF6B35", priority: 1 },
   { id: "gold",    name: "Amex Gold",           balance: 2310.44, originalBalance: 2310.44, apr: 28.49, color: "#FFB800", priority: 2 },
@@ -8,7 +8,7 @@ const INITIAL_CARDS = [
   { id: "apple",   name: "Apple Card",           balance: 3754.48, originalBalance: 3754.48, apr: 25.49, color: "#6D6D6D", priority: 5 },
   { id: "citi",    name: "Citi Costco",          balance: 3860.14, originalBalance: 3860.14, apr: 23.74, color: "#2A9D8F", priority: 6 },
 ];
- 
+
 const MONTHLY_BUDGET = { rent: 1000, carInsurance: 175.75, lifeInsurance: 300, gym: 115, subscriptions: 45, groceries: 250 };
 const TOTAL_FIXED = Object.values(MONTHLY_BUDGET).reduce((a, b) => a + b, 0);
 const BIWEEKLY_INCOME = 2517.31;
@@ -29,9 +29,9 @@ const TIPS = [
   "📊 Tracking every purchase alone reduces spending by ~15%",
   "🎉 4 of 6 cards gone by July — huge milestone ahead!",
 ];
- 
+
 const fmt = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n || 0);
- 
+
 const inputStyle = {
   width: "100%", background: "#0a0a0f", border: "1px solid #2a2a3a", borderRadius: 8,
   padding: "10px 12px", color: "#e8e4dc", fontSize: 15, marginBottom: 10,
@@ -42,7 +42,7 @@ const btnStyle = (color, disabled) => ({
   borderRadius: 8, padding: "12px", color: disabled ? "#4a4a6a" : color, fontSize: 12, letterSpacing: 2,
   textTransform: "uppercase", fontFamily: "monospace", cursor: disabled ? "not-allowed" : "pointer",
 });
- 
+
 // ── STORAGE HELPERS ──
 const store = {
   async get(key) {
@@ -57,14 +57,14 @@ const store = {
     } catch (e) { console.error("Storage set failed", e); }
   },
 };
- 
+
 export default function DebtTracker() {
   const [cards, setCards] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [payments, setPayments] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [loading, setLoading] = useState(true);
- 
+
   const [tab, setTab] = useState("dashboard");
   const [expenseForm, setExpenseForm] = useState({ amount: "", category: "Food & Dining", cardId: "none", note: "" });
   const [paymentForm, setPaymentForm] = useState({ cardId: "reserve", amount: "" });
@@ -73,12 +73,12 @@ export default function DebtTracker() {
   const [saving, setSaving] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [tip] = useState(TIPS[Math.floor(Math.random() * TIPS.length)]);
- 
+
   const showToast = useCallback((msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   }, []);
- 
+
   // ── LOAD ALL DATA ──
   useEffect(() => {
     (async () => {
@@ -96,36 +96,37 @@ export default function DebtTracker() {
       setLoading(false);
     })();
   }, []);
- 
+
   // ── PERSIST on every change ──
   useEffect(() => { if (!loading) store.set("dt-cards", cards); }, [cards, loading]);
   useEffect(() => { if (!loading) store.set("dt-expenses", expenses); }, [expenses, loading]);
   useEffect(() => { if (!loading) store.set("dt-payments", payments); }, [payments, loading]);
   useEffect(() => { if (!loading) store.set("dt-deposits", deposits); }, [deposits, loading]);
- 
+
   const today = new Date().toISOString().split("T")[0];
   const thisMonth = today.slice(0, 7);
- 
+
   const todayExpenses = expenses.filter(e => e.date === today);
   const monthExpenses = expenses.filter(e => e.date?.startsWith(thisMonth));
   const spentToday = todayExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const spentMonth = monthExpenses.reduce((s, e) => s + (e.amount || 0), 0);
   const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
   const dayOfMonth = new Date().getDate();
   const dailyBudget = (250 / daysInMonth) * 2;
- 
+
   const totalDebt = cards.reduce((s, c) => s + (c.balance || 0), 0);
   const totalOriginal = 21778.61;
   const paidOff = totalOriginal - totalDebt;
   const progress = Math.max(0, Math.min(100, (paidOff / totalOriginal) * 100));
   const activeCard = [...cards].filter(c => c.balance > 0).sort((a, b) => a.priority - b.priority)[0];
- 
+
   const totalDeposited = deposits.reduce((s, d) => s + (d.amount || 0), 0);
   const totalCashSpent = expenses.filter(e => e.cardId === "none").reduce((s, e) => s + (e.amount || 0), 0);
   const totalPaid = payments.reduce((s, p) => s + (p.amount || 0), 0);
   const bankBalance = STARTING_BUFFER + totalDeposited - totalCashSpent - totalPaid;
   const monthDeposits = deposits.filter(d => d.date?.startsWith(thisMonth));
   const monthDepositTotal = monthDeposits.reduce((s, d) => s + (d.amount || 0), 0);
- 
+
   // ── SAVINGS GOALS ──
   const EMERGENCY_GOAL = 5000;
   const HOUSE_GOAL = 50000;
@@ -138,12 +139,12 @@ export default function DebtTracker() {
   const housePct = Math.min(100, (houseSaved / HOUSE_GOAL) * 100);
   const totalSaved = emergencyFunded + houseSaved;
   const totalSavingsPct = Math.min(100, (totalSaved / TOTAL_SAVINGS_GOAL) * 100);
- 
+
   const monthsToFreedom = Math.max(1, Math.ceil(totalDebt / MONTHLY_DEBT_PAYMENT));
   const freedomDate = new Date();
   freedomDate.setMonth(freedomDate.getMonth() + monthsToFreedom);
   const freedomStr = freedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
- 
+
   // ── ACTIONS ──
   const addExpense = async () => {
     const amt = parseFloat(expenseForm.amount);
@@ -164,7 +165,7 @@ export default function DebtTracker() {
     showToast(isCard ? `💳 ${fmt(amt)} added to ${card?.name}` : over ? `⚠️ ${fmt(amt)} logged — over budget` : `✅ ${fmt(amt)} deducted from bank`, isCard ? "success" : over ? "warn" : "success");
     setSaving(false);
   };
- 
+
   const addPayment = async () => {
     const amt = parseFloat(paymentForm.amount);
     if (!amt || amt <= 0) return showToast("Enter a valid amount", "error");
@@ -181,7 +182,7 @@ export default function DebtTracker() {
     else showToast(`💳 ${fmt(actual)} applied to ${card.name} — ${fmt(newBal)} left`, "success");
     setSaving(false);
   };
- 
+
   const addDeposit = async () => {
     const amt = parseFloat(depositForm.amount);
     if (!amt || amt <= 0) return showToast("Enter a valid amount", "error");
@@ -192,7 +193,7 @@ export default function DebtTracker() {
     showToast(`💰 ${fmt(amt)} ${depositForm.type} logged!`, "success");
     setSaving(false);
   };
- 
+
   const deleteExpense = (id) => {
     const exp = expenses.find(x => x.id === id);
     if (!exp) return;
@@ -202,13 +203,13 @@ export default function DebtTracker() {
     setExpenses(prev => prev.filter(x => x.id !== id));
     showToast(`Removed ${fmt(exp.amount)} expense`, "success");
   };
- 
+
   const deleteDeposit = (id) => {
     const dep = deposits.find(x => x.id === id);
     setDeposits(prev => prev.filter(x => x.id !== id));
     showToast(`Removed ${fmt(dep?.amount)} deposit`, "success");
   };
- 
+
   const resetAllData = async () => {
     setSaving(true);
     setCards(INITIAL_CARDS);
@@ -220,9 +221,9 @@ export default function DebtTracker() {
     setTab("dashboard");
     setSaving(false);
   };
- 
+
   const TABS = ["dashboard", "log", "savings", "cards", "history", "settings"];
- 
+
   if (loading) return (
     <div style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "monospace", color: "#6b6b8a" }}>
       <div style={{ fontSize: 28, marginBottom: 16 }}>💳</div>
@@ -232,10 +233,10 @@ export default function DebtTracker() {
       </div>
     </div>
   );
- 
+
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#e8e4dc", fontFamily: "'Georgia', serif" }}>
- 
+
       {/* ── HEADER ── */}
       <div style={{ background: "linear-gradient(135deg, #0a0a0f, #141420, #0a0a0f)", borderBottom: "1px solid #2a2a3a", padding: "18px 16px 0", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 480, margin: "0 auto" }}>
@@ -284,7 +285,7 @@ export default function DebtTracker() {
           </div>
         </div>
       </div>
- 
+
       {/* ── TOAST ── */}
       {toast && (
         <div style={{
@@ -295,13 +296,13 @@ export default function DebtTracker() {
           textAlign: "center", fontFamily: "monospace", boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
         }}>{toast.msg}</div>
       )}
- 
+
       <div style={{ maxWidth: 480, margin: "0 auto", padding: "18px 16px 60px" }}>
- 
+
         {/* ── DASHBOARD ── */}
         {tab === "dashboard" && (
           <div>
- 
+
             {/* ── SAVINGS GOALS ── */}
             <div style={{ background: "#111118", border: "1px solid #2a2a3a", borderRadius: 12, padding: 14, marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -312,7 +313,7 @@ export default function DebtTracker() {
               <div style={{ height: 5, background: "#1a1a2e", borderRadius: 3, overflow: "hidden", marginBottom: 14 }}>
                 <div style={{ height: "100%", width: `${totalSavingsPct}%`, background: "linear-gradient(90deg, #2A9D8F, #457B9D)", borderRadius: 3, transition: "width 0.8s ease" }} />
               </div>
- 
+
               {/* Emergency Fund */}
               <div style={{ marginBottom: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
@@ -334,7 +335,7 @@ export default function DebtTracker() {
                   </div>
                 )}
               </div>
- 
+
               {/* House Savings */}
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
@@ -372,7 +373,7 @@ export default function DebtTracker() {
                 <div style={{ fontSize: 10, color: "#6b6b8a", marginTop: 3 }}>est. running balance</div>
               </div>
             </div>
- 
+
             <div style={{ background: "#111118", border: "1px solid #2a2a3a", borderRadius: 12, padding: 14, marginBottom: 14 }}>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 10 }}>MONTHLY SNAPSHOT</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
@@ -381,7 +382,7 @@ export default function DebtTracker() {
                 ))}
               </div>
             </div>
- 
+
             {activeCard && (
               <div style={{ background: "#111118", border: `1px solid ${activeCard.color}44`, borderLeft: `3px solid ${activeCard.color}`, borderRadius: 12, padding: 14, marginBottom: 14 }}>
                 <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 5 }}>🎯 CURRENT TARGET</div>
@@ -401,17 +402,17 @@ export default function DebtTracker() {
                 </div>
               </div>
             )}
- 
+
             <div style={{ background: "#0f1a1a", border: "1px solid #1a3a3a", borderRadius: 12, padding: 14, marginBottom: 14 }}>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#2A9D8F", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 8 }}>💡 TIP OF THE DAY</div>
               <div style={{ fontSize: 13, color: "#c8c4bc", lineHeight: 1.6 }}>{tip}</div>
             </div>
- 
+
             <div style={{ background: "#1a100a", border: "1px solid #FF6B3533", borderRadius: 12, padding: 14, marginBottom: 14 }}>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#FF6B35", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 5 }}>💍 WEDDING FUND</div>
               <div style={{ fontSize: 13, color: "#c8c4bc", lineHeight: 1.6 }}>$10,000 of vested stock is <strong style={{ color: "#FFB800" }}>reserved for July 2026</strong>. Do not allocate to debt.</div>
             </div>
- 
+
             <div>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 10 }}>RECENT EXPENSES</div>
               {expenses.length === 0
@@ -438,7 +439,7 @@ export default function DebtTracker() {
             </div>
           </div>
         )}
- 
+
         {/* ── LOG ── */}
         {tab === "log" && (
           <div>
@@ -455,7 +456,7 @@ export default function DebtTracker() {
               <input type="text" placeholder="Note (optional)" value={expenseForm.note} onChange={e => setExpenseForm(p => ({ ...p, note: e.target.value }))} style={inputStyle} />
               <button onClick={addExpense} style={btnStyle("#2A9D8F", saving)}>Log Expense</button>
             </div>
- 
+
             <div style={{ background: "#111118", border: "1px solid #2a2a3a", borderRadius: 12, padding: 16, marginBottom: 14 }}>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 12 }}>LOG DEBT PAYMENT</div>
               <select value={paymentForm.cardId} onChange={e => setPaymentForm(p => ({ ...p, cardId: e.target.value }))} style={inputStyle}>
@@ -464,7 +465,7 @@ export default function DebtTracker() {
               <input type="number" placeholder="Payment amount ($)" value={paymentForm.amount} onChange={e => setPaymentForm(p => ({ ...p, amount: e.target.value }))} style={inputStyle} />
               <button onClick={addPayment} style={btnStyle("#FFB800", saving)}>Apply Payment</button>
             </div>
- 
+
             <div>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 10 }}>TODAY'S EXPENSES</div>
               {todayExpenses.length === 0
@@ -489,7 +490,7 @@ export default function DebtTracker() {
             </div>
           </div>
         )}
- 
+
         {/* ── SAVINGS ── */}
         {tab === "savings" && (
           <div>
@@ -505,7 +506,7 @@ export default function DebtTracker() {
                 <div style={{ fontSize: 10, color: "#6b6b8a", marginTop: 3 }}>{monthDeposits.length} deposit{monthDeposits.length !== 1 ? "s" : ""}</div>
               </div>
             </div>
- 
+
             <div style={{ background: "#111118", border: "1px solid #2a2a3a", borderRadius: 12, padding: 14, marginBottom: 14 }}>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 12 }}>ALL TIME SUMMARY</div>
               {[
@@ -524,7 +525,7 @@ export default function DebtTracker() {
                 <span style={{ fontSize: 14, color: "#FFB800", fontWeight: "bold" }}>{fmt(Math.max(0, bankBalance))}</span>
               </div>
             </div>
- 
+
             <div style={{ background: "#111118", border: "1px solid #2a2a3a", borderRadius: 12, padding: 16, marginBottom: 14 }}>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 12 }}>ADD DEPOSIT</div>
               <input type="number" placeholder="Amount ($)" value={depositForm.amount} onChange={e => setDepositForm(p => ({ ...p, amount: e.target.value }))} style={inputStyle} />
@@ -539,7 +540,7 @@ export default function DebtTracker() {
                 </button>
               </div>
             </div>
- 
+
             <div>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 10 }}>DEPOSIT HISTORY</div>
               {deposits.length === 0
@@ -559,7 +560,7 @@ export default function DebtTracker() {
             </div>
           </div>
         )}
- 
+
         {/* ── CARDS ── */}
         {tab === "cards" && (
           <div>
@@ -596,7 +597,7 @@ export default function DebtTracker() {
             })}
           </div>
         )}
- 
+
         {/* ── HISTORY ── */}
         {tab === "history" && (
           <div>
@@ -612,7 +613,7 @@ export default function DebtTracker() {
                   <div style={{ fontSize: 14, fontWeight: "bold", color: "#2A9D8F" }}>−{fmt(p.amount)}</div>
                 </div>
               ))}
- 
+
             <div style={{ marginTop: 18 }}>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 10 }}>ALL EXPENSES</div>
               {expenses.length === 0
@@ -634,7 +635,7 @@ export default function DebtTracker() {
             </div>
           </div>
         )}
- 
+
         {/* ── SETTINGS ── */}
         {tab === "settings" && (
           <div>
@@ -673,7 +674,7 @@ export default function DebtTracker() {
           </div>
         )}
       </div>
- 
+
       {/* ── RESET MODAL ── */}
       {showResetConfirm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.88)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
