@@ -359,9 +359,12 @@ export default function DebtTracker() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
               <div style={{ background: "#111118", border: "1px solid #2a2a3a", borderRadius: 12, padding: 14 }}>
-                <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 5 }}>SPENT TODAY</div>
-                <div style={{ fontSize: 20, fontWeight: "bold", color: spentToday > dailyBudget ? "#ff4444" : "#e8e4dc" }}>{fmt(spentToday)}</div>
-                <div style={{ fontSize: 10, color: "#6b6b8a", marginTop: 3 }}>budget ~{fmt(dailyBudget)}</div>
+                <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 5 }}>SPENT THIS MONTH</div>
+                <div style={{ fontSize: 20, fontWeight: "bold", color: spentMonth > TOTAL_FIXED + 250 ? "#ff4444" : "#e8e4dc" }}>{fmt(spentMonth)}</div>
+                <div style={{ fontSize: 10, color: "#6b6b8a", marginTop: 3 }}>budget {fmt(TOTAL_FIXED + 250)}</div>
+                <div style={{ marginTop: 6, height: 3, background: "#1a1a2e", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min(100, (spentMonth / (TOTAL_FIXED + 250)) * 100)}%`, background: spentMonth > TOTAL_FIXED + 250 ? "#ff4444" : "#2A9D8F", borderRadius: 2, transition: "width 0.5s ease" }} />
+                </div>
               </div>
               <div style={{ background: "#111118", border: "1px solid #2a2a3a", borderRadius: 12, padding: 14 }}>
                 <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 5 }}>BANK BALANCE</div>
@@ -660,7 +663,7 @@ export default function DebtTracker() {
             </div>
             <div style={{ background: "#0a1a0a", border: "1px solid #2A9D8F33", borderRadius: 12, padding: 14, marginBottom: 12 }}>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#2A9D8F", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 8 }}>☁️ DATA STORAGE</div>
-              <div style={{ fontSize: 13, color: "#c8c4bc", lineHeight: 1.6 }}>Your data is saved to <strong style={{ color: "#2A9D8F" }}>Claude's persistent storage</strong>. It survives closing the app, switching tabs, and coming back days later — no setup needed.</div>
+              <div style={{ fontSize: 13, color: "#c8c4bc", lineHeight: 1.6 }}>Your data is saved to <strong style={{ color: "#2A9D8F" }}>local storage on your device</strong>. It persists across app restarts and sessions on this device.</div>
             </div>
             <div style={{ background: "#1a0a0a", border: "1px solid #ff444422", borderRadius: 12, padding: 14 }}>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#ff4444", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 10 }}>DANGER ZONE</div>
