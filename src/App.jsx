@@ -16,7 +16,7 @@ const MONTHLY_INCOME = BIWEEKLY_INCOME * 2;
 const MONTHLY_DEBT_PAYMENT = MONTHLY_INCOME - TOTAL_FIXED;
 const CATEGORIES = ["Food & Dining", "Transport", "Shopping", "Entertainment", "Groceries", "Health", "Other"];
 const INCOME_TYPES = ["Payroll", "Bonus", "Freelance", "Gift", "Refund", "Sale", "Other"];
-const STARTING_BUFFER = 1278.40;
+const STARTING_BUFFER = 1755.23;
 const TIPS = [
   "☕ Skip one coffee out = ~$5 saved toward debt payoff",
   "🛒 Meal prep this week saves ~$60 on dining",
