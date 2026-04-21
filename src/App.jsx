@@ -11,7 +11,7 @@ const INITIAL_CARDS = [
 
 const MONTHLY_BUDGET = { rent: 1000, carInsurance: 175.75, lifeInsurance: 300, gym: 115, subscriptions: 45, groceries: 250 };
 const TOTAL_FIXED = Object.values(MONTHLY_BUDGET).reduce((a, b) => a + b, 0);
-const BIWEEKLY_INCOME = 2517.31;
+const BIWEEKLY_INCOME = 2559.47;
 const MONTHLY_INCOME = BIWEEKLY_INCOME * 2;
 const MONTHLY_DEBT_PAYMENT = MONTHLY_INCOME - TOTAL_FIXED;
 const CATEGORIES = ["Food & Dining", "Transport", "Shopping", "Entertainment", "Groceries", "Health", "Other"];
@@ -403,10 +403,82 @@ export default function DebtTracker() {
               </div>
             )}
 
-            <div style={{ background: "#0f1a1a", border: "1px solid #1a3a3a", borderRadius: 12, padding: 14, marginBottom: 14 }}>
-              <div style={{ fontSize: 9, letterSpacing: 2, color: "#2A9D8F", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 8 }}>💡 TIP OF THE DAY</div>
-              <div style={{ fontSize: 13, color: "#c8c4bc", lineHeight: 1.6 }}>{tip}</div>
-            </div>
+            {/* ── INSIGHTS ENGINE ── */}
+            {(() => {
+              const insights = [];
+
+              // 1. Spending by category this month
+              const catSpend = {};
+              monthExpenses.forEach(e => { catSpend[e.category] = (catSpend[e.category] || 0) + e.amount; });
+              const topCat = Object.entries(catSpend).sort((a,b) => b[1]-a[1])[0];
+              if (topCat && topCat[1] > 50) {
+                insights.push({ icon: "📊", color: "#457B9D", title: "Top Spend Category", text: `${topCat[0]} is your biggest expense this month at ${fmt(topCat[1])}. Consider setting a specific limit here.` });
+              }
+
+              // 2. Card usage warning — spending on high APR cards
+              const highAprCards = ["reserve", "gold", "venture"];
+              const highAprSpend = monthExpenses.filter(e => highAprCards.includes(e.cardId)).reduce((s,e) => s+e.amount, 0);
+              if (highAprSpend > 0) {
+                insights.push({ icon: "⚠️", color: "#ff4444", title: "High APR Card Usage", text: `You've charged ${fmt(highAprSpend)} to your highest APR cards (28%+) this month. Use Citi Costco or cash instead to reduce interest.` });
+              }
+
+              // 3. Budget burn rate
+              const daysGone = dayOfMonth;
+              const daysTotal = daysInMonth;
+              const budgetUsedPct = TOTAL_FIXED + 250 > 0 ? (spentMonth / (TOTAL_FIXED + 250)) * 100 : 0;
+              const daysPct = (daysGone / daysTotal) * 100;
+              if (budgetUsedPct > daysPct + 15 && spentMonth > 100) {
+                const projectedMonthly = (spentMonth / daysGone) * daysTotal;
+                insights.push({ icon: "🔥", color: "#FF6B35", title: "Over Budget Pace", text: `At your current rate you'll spend ${fmt(projectedMonthly)} this month — ${fmt(projectedMonthly - (TOTAL_FIXED + 250))} over budget. Slow down discretionary spending now.` });
+              } else if (budgetUsedPct < daysPct - 20 && spentMonth > 0) {
+                const saved = ((TOTAL_FIXED + 250) - spentMonth);
+                insights.push({ icon: "✅", color: "#2A9D8F", title: "Under Budget", text: `Great discipline — you're spending ${Math.round(daysPct - budgetUsedPct)}% below pace. Consider putting the surplus ${fmt(saved * 0.5)} toward ${activeCard?.name || "your top card"}.` });
+              }
+
+              // 4. Debt payoff momentum
+              const monthPayments = payments.filter(p => p.date?.startsWith(thisMonth)).reduce((s,p) => s+p.amount, 0);
+              if (monthPayments > MONTHLY_DEBT_PAYMENT) {
+                insights.push({ icon: "🚀", color: "#2A9D8F", title: "Ahead of Schedule", text: `You've paid ${fmt(monthPayments)} toward debt this month — ${fmt(monthPayments - MONTHLY_DEBT_PAYMENT)} above your ${fmt(MONTHLY_DEBT_PAYMENT)} target. Keep it up!` });
+              } else if (monthPayments > 0 && monthPayments < MONTHLY_DEBT_PAYMENT * 0.5 && daysGone > 15) {
+                insights.push({ icon: "📉", color: "#FFB800", title: "Behind on Payments", text: `Only ${fmt(monthPayments)} paid toward debt so far. You need ${fmt(MONTHLY_DEBT_PAYMENT - monthPayments)} more this month to stay on track for your October 2026 goal.` });
+              }
+
+              // 5. Interest cost awareness
+              const totalMonthlyInterest = cards.reduce((s,c) => s + (c.balance > 0 ? c.balance * (c.apr/100/12) : 0), 0);
+              if (totalMonthlyInterest > 0) {
+                insights.push({ icon: "💸", color: "#ff6b6b", title: "Interest Costing You", text: `Your current balances are accruing ${fmt(totalMonthlyInterest)} in interest this month alone. Every extra dollar paid toward ${activeCard?.name || "your top card"} directly reduces this.` });
+              }
+
+              // 6. Savings progress
+              const emergencyGap = Math.max(0, 5000 - Math.max(0, bankBalance));
+              if (emergencyGap > 0 && emergencyGap < 5000) {
+                insights.push({ icon: "🛡️", color: "#457B9D", title: "Emergency Fund Progress", text: `You're ${fmt(Math.max(0, bankBalance))} of the way to your $5,000 emergency fund. ${fmt(emergencyGap)} to go before house savings unlock.` });
+              }
+
+              // 7. Food & Dining specific tip
+              const diningSpend = catSpend["Food & Dining"] || 0;
+              if (diningSpend > 150) {
+                insights.push({ icon: "🍽️", color: "#FFB800", title: "Dining Spend", text: `${fmt(diningSpend)} on Food & Dining this month. Meal prepping just 3 days a week could save ~$80–120/month — that's an extra payment toward your Amex Reserve.` });
+              }
+
+              // 8. No expenses logged yet
+              if (expenses.length === 0) {
+                insights.push({ icon: "💡", color: "#2A9D8F", title: "Start Tracking", text: "Log your first expense to unlock personalized spend analysis and budget insights here." });
+                insights.push({ icon: "🎯", color: "#FFB800", title: "Your Goal", text: `Paying ${fmt(MONTHLY_DEBT_PAYMENT)}/month clears all ${fmt(totalDebt)} in debt by October 2026. Log payroll in Savings to track your full cash flow.` });
+              }
+
+              return (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 9, letterSpacing: 2, color: "#6b6b8a", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 10 }}>💡 INSIGHTS & ANALYSIS</div>
+                  {insights.slice(0, 4).map((ins, i) => (
+                    <div key={i} style={{ background: "#111118", border: `1px solid ${ins.color}33`, borderLeft: `3px solid ${ins.color}`, borderRadius: 10, padding: "12px 14px", marginBottom: 8 }}>
+                      <div style={{ fontSize: 11, fontWeight: "bold", color: ins.color, fontFamily: "monospace", marginBottom: 4 }}>{ins.icon} {ins.title}</div>
+                      <div style={{ fontSize: 13, color: "#c8c4bc", lineHeight: 1.6 }}>{ins.text}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
             <div style={{ background: "#1a100a", border: "1px solid #FF6B3533", borderRadius: 12, padding: 14, marginBottom: 14 }}>
               <div style={{ fontSize: 9, letterSpacing: 2, color: "#FF6B35", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 5 }}>💍 WEDDING FUND</div>
@@ -592,9 +664,105 @@ export default function DebtTracker() {
                     <span>{fmt(card.originalBalance - card.balance)} paid</span>
                     <span>{pct.toFixed(1)}% done</span>
                   </div>
+                  {/* Payoff date for this card */}
+                  {!isPaid && (() => {
+                    const sortedCards = [...cards].filter(c => c.balance > 0).sort((a, b) => a.priority - b.priority);
+                    let remainingPayment = MONTHLY_DEBT_PAYMENT;
+                    let monthsElapsed = 0;
+                    let tempBalances = cards.map(c => ({ ...c }));
+                    // Simulate avalanche month by month up to this card
+                    for (let m = 0; m < 120; m++) {
+                      // Apply monthly interest to all unpaid cards
+                      tempBalances = tempBalances.map(c => ({
+                        ...c, balance: c.balance > 0 ? c.balance + (c.balance * (c.apr / 100 / 12)) : 0
+                      }));
+                      // Pay avalanche order
+                      let budget = MONTHLY_DEBT_PAYMENT;
+                      const ordered = [...tempBalances].filter(c => c.balance > 0).sort((a, b) => a.priority - b.priority);
+                      for (const oc of ordered) {
+                        if (budget <= 0) break;
+                        const pay = Math.min(budget, oc.balance);
+                        const idx = tempBalances.findIndex(c => c.id === oc.id);
+                        tempBalances[idx].balance -= pay;
+                        budget -= pay;
+                      }
+                      // Check if this card is now paid
+                      const thisCardBalance = tempBalances.find(c => c.id === card.id)?.balance || 0;
+                      if (thisCardBalance <= 0.01) {
+                        monthsElapsed = m + 1;
+                        break;
+                      }
+                    }
+                    if (monthsElapsed === 0) return null;
+                    const payoffDate = new Date();
+                    payoffDate.setMonth(payoffDate.getMonth() + monthsElapsed);
+                    const payoffStr = payoffDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+                    return (
+                      <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #1a1a2a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 9, color: "#6b6b8a", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: 1 }}>Est. Payoff</span>
+                        <span style={{ fontSize: 11, color: card.color, fontFamily: "monospace", fontWeight: "bold" }}>{payoffStr} · {monthsElapsed}mo</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
+
+            {/* ── TOTAL DEBT PAYOFF TIMELINE ── */}
+            {(() => {
+              if (totalDebt <= 0) return (
+                <div style={{ background: "#0a1a0a", border: "1px solid #2A9D8F44", borderRadius: 12, padding: 14, textAlign: "center" }}>
+                  <div style={{ fontSize: 20, marginBottom: 6 }}>🎉</div>
+                  <div style={{ fontSize: 14, fontWeight: "bold", color: "#2A9D8F" }}>All Debts Paid Off!</div>
+                </div>
+              );
+              // Simulate full payoff with interest
+              let tempBalances = cards.map(c => ({ ...c }));
+              let totalMonths = 0;
+              for (let m = 0; m < 120; m++) {
+                tempBalances = tempBalances.map(c => ({
+                  ...c, balance: c.balance > 0 ? c.balance + (c.balance * (c.apr / 100 / 12)) : 0
+                }));
+                let budget = MONTHLY_DEBT_PAYMENT;
+                const ordered = [...tempBalances].filter(c => c.balance > 0).sort((a, b) => a.priority - b.priority);
+                for (const oc of ordered) {
+                  if (budget <= 0) break;
+                  const pay = Math.min(budget, oc.balance);
+                  const idx = tempBalances.findIndex(c => c.id === oc.id);
+                  tempBalances[idx].balance -= pay;
+                  budget -= pay;
+                }
+                if (tempBalances.every(c => c.balance <= 0.01)) {
+                  totalMonths = m + 1;
+                  break;
+                }
+              }
+              const freedomDateCalc = new Date();
+              freedomDateCalc.setMonth(freedomDateCalc.getMonth() + totalMonths);
+              const freedomStrCalc = freedomDateCalc.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+              const totalInterest = tempBalances.reduce((s, c) => s, 0);
+              return (
+                <div style={{ background: "#111118", border: "1px solid #FFB80033", borderLeft: "3px solid #FFB800", borderRadius: 12, padding: 14, marginTop: 4 }}>
+                  <div style={{ fontSize: 9, letterSpacing: 2, color: "#FFB800", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 12 }}>🏁 TOTAL DEBT FREEDOM</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: "bold", color: "#FFB800" }}>{freedomStrCalc}</div>
+                      <div style={{ fontSize: 10, color: "#6b6b8a", fontFamily: "monospace", marginTop: 2 }}>at {fmt(MONTHLY_DEBT_PAYMENT)}/month</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 20, fontWeight: "bold", color: "#e8e4dc" }}>{totalMonths}mo</div>
+                      <div style={{ fontSize: 10, color: "#6b6b8a", fontFamily: "monospace", marginTop: 2 }}>remaining</div>
+                    </div>
+                  </div>
+                  <div style={{ height: 4, background: "#1a1a2e", borderRadius: 2, overflow: "hidden", marginBottom: 8 }}>
+                    <div style={{ height: "100%", width: `${Math.min(100, (totalMonths > 0 ? ((totalMonths - totalMonths) / totalMonths) * 100 : 100))}%`, background: "linear-gradient(90deg, #FF6B35, #FFB800)", borderRadius: 2 }} />
+                  </div>
+                  <div style={{ fontSize: 10, color: "#6b6b8a", fontFamily: "monospace", textAlign: "center" }}>
+                    Paying off {cards.filter(c => c.balance > 0).length} cards · Avalanche method · Includes interest
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
