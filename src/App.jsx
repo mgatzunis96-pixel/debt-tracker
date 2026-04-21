@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 
 const INITIAL_CARDS = [
-  { id: "reserve", name: "Amex Delta Reserve", balance: 7125.30, originalBalance: 7125.30, apr: 28.49, color: "#FF6B35", priority: 1 },
-  { id: "gold",    name: "Amex Gold",           balance: 2310.44, originalBalance: 2310.44, apr: 28.49, color: "#FFB800", priority: 2 },
-  { id: "venture", name: "Capital One VentureX",balance: 1710.59, originalBalance: 1710.59, apr: 28.24, color: "#E63946", priority: 3 },
-  { id: "blue",    name: "Amex Delta Blue",      balance: 3017.66, originalBalance: 3017.66, apr: 28.24, color: "#457B9D", priority: 4 },
-  { id: "apple",   name: "Apple Card",           balance: 3754.48, originalBalance: 3754.48, apr: 25.49, color: "#6D6D6D", priority: 5 },
-  { id: "citi",    name: "Citi Costco",          balance: 3860.14, originalBalance: 3860.14, apr: 23.74, color: "#2A9D8F", priority: 6 },
+  { id: "reserve", name: "Amex Delta Reserve", balance: 6096.78, originalBalance: 6096.78, apr: 28.49, color: "#FF6B35", priority: 1 },
+  { id: "gold",    name: "Amex Gold",           balance: 2418.25, originalBalance: 2418.25, apr: 28.49, color: "#FFB800", priority: 2 },
+  { id: "venture", name: "Capital One VentureX",balance: 1855.37, originalBalance: 1855.37, apr: 28.24, color: "#E63946", priority: 3 },
+  { id: "blue",    name: "Amex Delta Blue",      balance: 3088.26, originalBalance: 3088.26, apr: 28.24, color: "#457B9D", priority: 4 },
+  { id: "apple",   name: "Apple Card",           balance: 3995.46, originalBalance: 3995.46, apr: 25.49, color: "#6D6D6D", priority: 5 },
+  { id: "citi",    name: "Citi Costco",          balance: 4049.45, originalBalance: 4049.45, apr: 23.74, color: "#2A9D8F", priority: 6 },
 ];
 
 const MONTHLY_BUDGET = { rent: 1000, carInsurance: 175.75, lifeInsurance: 300, gym: 115, subscriptions: 45, groceries: 250 };
@@ -115,7 +115,7 @@ export default function DebtTracker() {
   const dailyBudget = (250 / daysInMonth) * 2;
 
   const totalDebt = cards.reduce((s, c) => s + (c.balance || 0), 0);
-  const totalOriginal = 21778.61;
+  const totalOriginal = 21503.57;
   const paidOff = totalOriginal - totalDebt;
   const progress = Math.max(0, Math.min(100, (paidOff / totalOriginal) * 100));
   const activeCard = [...cards].filter(c => c.balance > 0).sort((a, b) => a.priority - b.priority)[0];
